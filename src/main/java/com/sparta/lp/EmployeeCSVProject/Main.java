@@ -13,7 +13,8 @@ public class Main {
         int validDataCount=0;
         int missingDataCount=0;
         int invalidDataCount=0;
-        int lineNumber=0;
+        int lineNumber=1;
+        int duplicateDataCount=0;
         boolean dataMissing=false;
         boolean dataIsValid=true;
         boolean dataIsDuplicate=false;
@@ -28,27 +29,31 @@ public class Main {
         try (BufferedReader in=new BufferedReader(new FileReader("EmployeeRecords.csv"));
              Connection conn= DriverManager.getConnection("jdbc:mysql://localhost:3306/Employees","root","MySp@rt@Qu3u3L£n")){
             Statement statement=conn.createStatement();
-            statement.executeUpdate("DROP TABLE Employees");
-            statement.executeUpdate("DROP TABLE Employees_Duplicates");
-            statement.executeUpdate("DROP TABLE Employees_with_missing_or_invalid_data");
-            statement.executeUpdate("CREATE TABLE \"Employees\" ( \"Employee ID\" INTEGER,"+
-                    "\"Name Prefix\" varchar(255), \"First_Name\" varchar(255), \"Middle_initials\" varchar(1), "+
-                    "\"Last_Name\" varchar(255), \"Gender\"	varchar(1), \"Email\" varchar(255), \"Date_of_Birth\" datetime"+
-                    "\"Date_of_Joining\" datetime, \"Salary\" INTEGER");
-            statement.executeUpdate("CREATE TABLE \"Employees_Duplicates\" ( \"Employee ID\" INTEGER,"+
-                    "\"Name Prefix\" varchar(255), \"First_Name\" varchar(255), \"Middle_initials\" varchar(1), "+
-                    "\"Last_Name\" varchar(255), \"Gender\"	varchar(1), \"Email\" varchar(255), \"Date_of_Birth\" datetime"+
-                    "\"Date_of_Joining\" datetime, \"Salary\" INTEGER");
-            statement.executeUpdate("CREATE TABLE \"Employees_with_missing_or_invalid_data\" ( \"Employee ID\" INTEGER,"+
-                    "\"Name Prefix\" varchar(255), \"First_Name\" varchar(255), \"Middle_initials\" varchar(1), "+
-                    "\"Last_Name\" varchar(255), \"Gender\"	varchar(1), \"Email\" varchar(255), \"Date_of_Birth\" datetime"+
-                    "\"Date_of_Joining\" datetime, \"Salary\" INTEGER");
-            PreparedStatement corruptData=conn.prepareStatement("INSERT INTO Employees_with_missing_or_invalid_data" +"(Employee_ID, Name_Prefix, First_Name, Middle_Initial, " +
-                    "Last_Name, Gender, Email, Date_of_Birth, Date_of_Joining, Salery) "+"VALUES(?,?,?,?,?,?,?,?,?,?)");
-            PreparedStatement validData=conn.prepareStatement("INSERT INTO Employees" +"(Employee_ID, Name_Prefix, First_Name, Middle_Initial, " +
-                    "Last_Name, Gender, Email, Date_of_Birth, Date_of_Joining, Salery) "+"VALUES(?,?,?,?,?,?,?,?,?,?)");
-            PreparedStatement DuplicateData=conn.prepareStatement("INSERT INTO Employees_Duplicates" +"(Employee_ID, Name_Prefix, First_Name, Middle_Initial, " +
-                    "Last_Name, Gender, Email, Date_of_Birth, Date_of_Joining, Salery) "+"VALUES(?,?,?,?,?,?,?,?,?,?)");
+            try {
+                statement.executeUpdate("DROP TABLE Employees");
+                statement.executeUpdate("DROP TABLE Employees_Duplicates");
+                statement.executeUpdate("DROP TABLE Employees_with_missing_or_invalid_data");
+            }catch (SQLSyntaxErrorException p){
+                System.out.println("table(s) didn't exest");
+            }
+            statement.executeUpdate("CREATE TABLE Employees ( Employee_ID INTEGER,"+
+                    "Name_Prefix VARCHAR(255), First_Name VARCHAR(255), Middle_initials VARCHAR(1), "+
+                    "Last_Name VARCHAR(255), Gender	varchar(1), Email varchar(255), Date_of_Birth datetime,"+
+                    "Date_of_Joining datetime, Salary INTEGER)");
+            statement.executeUpdate("CREATE TABLE Employees_Duplicates ( Employee_ID INTEGER,"+
+                    "Name_Prefix varchar(255), First_Name varchar(255), Middle_initials varchar(1), "+
+                    "Last_Name varchar(255), Gender	varchar(1), Email varchar(255), Date_of_Birth datetime,"+
+                    "Date_of_Joining datetime, Salary INTEGER)");
+            statement.executeUpdate("CREATE TABLE Employees_with_missing_or_invalid_data ( Employee_ID INTEGER,"+
+                    "Name_Prefix varchar(255), First_Name varchar(255), Middle_initials varchar(1), "+
+                    "Last_Name varchar(255), Gender	varchar(1), Email varchar(255), Date_of_Birth datetime,"+
+                    "Date_of_Joining datetime, Salary INTEGER)");
+            PreparedStatement corruptData=conn.prepareStatement("INSERT INTO Employees_with_missing_or_invalid_data" +"(Employee_ID, Name_Prefix, First_Name, Middle_initials, " +
+                    "Last_Name, Gender, Email, Date_of_Birth, Date_of_Joining, Salary) "+"VALUES(?,?,?,?,?,?,?,?,?,?)");
+            PreparedStatement validData=conn.prepareStatement("INSERT INTO Employees" +"(Employee_ID, Name_Prefix, First_Name, Middle_initials, " +
+                    "Last_Name, Gender, Email, Date_of_Birth, Date_of_Joining, Salary) "+"VALUES(?,?,?,?,?,?,?,?,?,?)");
+            PreparedStatement DuplicateData=conn.prepareStatement("INSERT INTO Employees_Duplicates" +"(Employee_ID, Name_Prefix, First_Name, Middle_initials, " +
+                    "Last_Name, Gender, Email, Date_of_Birth, Date_of_Joining, Salary) "+"VALUES(?,?,?,?,?,?,?,?,?,?)");
             while (( line=in.readLine())!=null) {
                 if (lineNumber==1){
                     headerNames=Arrays.asList(line.split(","));
@@ -57,7 +62,7 @@ public class Main {
                     dataIsValid=true;
                     newLine = Arrays.asList(line.split(","));
                     for (int i = 0; i < newLine.size(); i++) {
-                        newLine.add(i, newLine.get(i).trim());
+                        newLine.set(i, newLine.get(i).trim());
                     }
                     for (int j=0; j<newLine.size(); j++) {
                         checkFactory validator= checkerFactory.check(j+1);
@@ -83,15 +88,25 @@ public class Main {
                         }
                         if (dataIsDuplicate){
                             int locationOfDuplicate=allValidID.indexOf(newLine.get(0));
-                            validDataSet.remove(locationOfDuplicate);
+                            String data=validDataSet.remove(locationOfDuplicate);
+                            duplicateData.add(data);
+                            validDataCount--;
+                            duplicateDataCount++;
                         }else {
                             allValidID.add(newLine.get(0));
                             validDataSet.add(line);
+                            validDataCount++;
                         }
                     }
 
                 }
                 lineNumber++;
+            }
+            for (String s: validDataSet ) {
+                newLine=Arrays.asList(s.split(","));
+                for (int i = 0; i < newLine.size(); i++) {
+                    validData.setString(i+1,newLine.get(i));
+                }
             }
         }catch(IOException | SQLException e){
             e.printStackTrace();
