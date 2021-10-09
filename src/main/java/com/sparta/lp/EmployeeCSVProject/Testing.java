@@ -42,4 +42,15 @@ public class Testing {
         }
         assertTrue(NumberChecker.numberChecker(numbers.get(3)));
     }
+    @Test
+    public void dateCheckerTest(){
+        List<String> invalidDates=Arrays.asList("","2","//","2/2/4","3//5","2/2","/4/2020","3/5/");
+        List<String> validDates=Arrays.asList("2/3/2222","22/3/22","2/11/2222","22/11/2222");
+        for (String s:invalidDates) {
+            assertFalse(DateChecker.dateChecker(s));
+        }
+        for (String d:validDates) {
+            assertFalse(DateChecker.dateChecker(d));
+        }
+    }
 }

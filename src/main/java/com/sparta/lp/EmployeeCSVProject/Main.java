@@ -51,26 +51,11 @@ public class Main {
                     headerNames=Arrays.asList(line.split(","));
 
                 }else {
-                    allDataPresent=true;
                     dataIsValid=true;
                     newLine = Arrays.asList(line.split(","));
                     for (int i = 0; i < newLine.size(); i++) {
                         newLine.add(i, newLine.get(i).trim());
                     }
-                    for (int j=0; j<newLine.size(); j++){
-                        if (newLine.get(j).length()==0){
-                            allDataPresent=false;
-                            missingDataCount++;
-                            logger.info("missing "+headerNames.get(j)+" for "+newLine.get(2)+" "+newLine.get(4)+".  See line "+(missingDataCount+invalidDataCount)+" of the table ");
-                        }
-                    }
-                    if (!allDataPresent){
-                        for (int k = 1; k < 11; k++) {
-                            corruptData.setString(k,newLine.get(k));
-                        }
-                        corruptData.executeUpdate();
-                    }
-                    else {};
 
 
                 }
