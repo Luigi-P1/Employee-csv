@@ -5,14 +5,9 @@ package com.sparta.lp.EmployeeCSVProject;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class NameChecker {
-    public class singleLetterElements{
-        static boolean singleLetterCheck(String name){
-            if (nameChecker(name) && name.length()==1){return true;}
-            return false;
-        }
-    }
-    public static  boolean nameChecker(String name){
+public class NameChecker extends checkFactory{
+    @Override
+    public  boolean check(String name){
         Pattern namePattern=Pattern.compile("[a-zA-Z]+");
 
         Matcher matcher=namePattern.matcher(name);
