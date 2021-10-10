@@ -1,7 +1,4 @@
 package com.sparta.lp.EmployeeCSVProject;
-
-
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,5 +10,4 @@ public class NameChecker extends checkFactory{
         Matcher matcher=namePattern.matcher(name);
         return matcher.matches();
     }
-    //public static boolean isAlphabetical(String str)
 }

@@ -13,6 +13,7 @@ public class Main {
     public static void main(String[] args) {
         PropertyConfigurator.configure("log4j.properties");
         String line=null;
+        int totalDataCount=0;
         int validDataCount=0;
         int missingDataCount=0;
         int invalidDataCount=0;
@@ -21,14 +22,11 @@ public class Main {
         boolean dataMissing=false;
         boolean dataIsValid=true;
         boolean dataIsDuplicate=false;
-        List<String> allID=new ArrayList<String>();
         List<String> validDataSet=new ArrayList<String>();
         List<String> allValidID=new ArrayList<>();
-        List<String> duplicateID=new ArrayList<String>();
         List<String> duplicateData=new ArrayList<String>();
-        List<String> headerNames=new ArrayList<String>();
+        List<String> invalidOrMissingData=new ArrayList<String>();
         List<String> newLine=new ArrayList<String>();
-        List<String> lineInList=new ArrayList<String>();
         try (BufferedReader in=new BufferedReader(new FileReader("EmployeeRecords.csv"));
              Connection conn= DriverManager.getConnection("jdbc:mysql://localhost:3306/Employees","root","MySp@rt@Qu3u3L£n")){
             Statement statement=conn.createStatement();
@@ -58,11 +56,10 @@ public class Main {
             PreparedStatement DuplicateData=conn.prepareStatement("INSERT INTO Employees_Duplicates" +"(Employee_ID, Name_Prefix, First_Name, Middle_initials, " +
                     "Last_Name, Gender, Email, Date_of_Birth, Date_of_Joining, Salary) "+"VALUES(?,?,?,?,?,?,?,?,?,?)");
             while (( line=in.readLine())!=null) {
-                if (lineNumber==1){
-                    headerNames=Arrays.asList(line.split(","));
-
-                }else {
+                if (lineNumber!=1){
                     dataIsValid=true;
+                    dataMissing =false;
+                    dataIsDuplicate=false;
                     newLine = Arrays.asList(line.split(","));
                     for (int i = 0; i < newLine.size(); i++) {
                         newLine.set(i, newLine.get(i).trim());
@@ -74,26 +71,22 @@ public class Main {
                         }
                     }
                     if (!dataIsValid){
-                        logger.info("Invalid or missing data found on line "+lineNumber+" of the csv file, its been added to a separate table.");
+                        logger.info("Invalid or missing data found on line "+lineNumber
+                                +" of the csv file, its been added to a separate table.");
                         for (int i = 0; i < newLine.size(); i++) {
-                            if (i !=7 &&i!=8) {
-                                corruptData.setString(i + 1, newLine.get(i));
-                            }else {
-                                Date d= new SimpleDateFormat("MM/dd/yyyy").parse(newLine.get(i));
-                                java.sql.Date d1 = new java.sql.Date(d.getTime());
-                                corruptData.setDate(i+1,d1);
+                            if (newLine.get(i).length()==0){
+                                dataMissing=true;
                             }
-                            if (newLine.get(i).length()==0){dataMissing=true;}
                         }
-                        corruptData.executeUpdate();
-                        if (dataMissing){
-                            missingDataCount++;
-                        }else {
-                            invalidDataCount++;
+                        invalidOrMissingData.add(line);
+                        if (dataMissing){missingDataCount++;
+                        }else {invalidDataCount++;
                         }
                     }else {
                         if (allValidID.contains(newLine.get(0))){
                             dataIsDuplicate=true;
+                            logger.info("Duplicate data found on line "+lineNumber
+                                    +" of the csv file, its been added to a separate table.");
                         }
                         if (dataIsDuplicate){
                             int locationOfDuplicate=allValidID.indexOf(newLine.get(0));
@@ -107,39 +100,18 @@ public class Main {
                             validDataCount++;
                         }
                     }
-
+                    totalDataCount++;
                 }
                 lineNumber++;
             }
-            for (String s: validDataSet ) {
-                newLine=Arrays.asList(s.split(","));
-                for (int i = 0; i < newLine.size(); i++) {
-                    if (i !=7 &&i!=8) {
-                        validData.setString(i + 1, newLine.get(i));
-                    }else {
-                        Date d= new SimpleDateFormat("MM/dd/yyyy").parse(newLine.get(i));
-                        java.sql.Date d1 = new java.sql.Date(d.getTime());
-                        validData.setDate(i+1,d1);
-                    }
-                }
-                validData.executeUpdate();
-
-            }
-            for (String s: duplicateData ) {
-                newLine=Arrays.asList(s.split(","));
-                for (int i = 0; i < newLine.size(); i++) {
-                    if (i !=7 &&i!=8) {
-                        DuplicateData.setString(i + 1, newLine.get(i));
-                    }else {
-                        Date d= new SimpleDateFormat("MM/dd/yyyy").parse(newLine.get(i));
-                        java.sql.Date d1 = new java.sql.Date(d.getTime());
-                        DuplicateData.setDate(i+1,d1);
-                    }
-                }
-                DuplicateData.executeUpdate();
-            }
+            TableLineAdder.LineAdder(validDataSet,validData);
+            TableLineAdder.LineAdder(duplicateData,DuplicateData);
+            TableLineAdder.LineAdder(invalidOrMissingData,corruptData);
         }catch(IOException | SQLException | ParseException e){
             e.printStackTrace();
         }
+        System.out.println("Total amount of data:"+totalDataCount+"\nDuplicate data count:"+duplicateDataCount+
+                "\nMissing data count:"+missingDataCount+"\nInvalid data count:"+invalidDataCount+
+                "\nValid data count:"+validDataCount);
     }
 }
