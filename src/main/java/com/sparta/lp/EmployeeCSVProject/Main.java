@@ -3,7 +3,10 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import java.io.*;
 import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.Date;
 
 public class Main {
     private static Logger logger=Logger.getLogger("Employee File Logger");
@@ -73,7 +76,13 @@ public class Main {
                     if (!dataIsValid){
                         logger.info("Invalid or missing data found on line "+lineNumber+" of the csv file, its been added to a separate table.");
                         for (int i = 0; i < newLine.size(); i++) {
-                            corruptData.setString(i+1,newLine.get(i));
+                            if (i !=7 &&i!=8) {
+                                corruptData.setString(i + 1, newLine.get(i));
+                            }else {
+                                Date d= new SimpleDateFormat("MM/dd/yyyy").parse(newLine.get(i));
+                                java.sql.Date d1 = new java.sql.Date(d.getTime());
+                                corruptData.setDate(i+1,d1);
+                            }
                             if (newLine.get(i).length()==0){dataMissing=true;}
                         }
                         corruptData.executeUpdate();
@@ -105,10 +114,31 @@ public class Main {
             for (String s: validDataSet ) {
                 newLine=Arrays.asList(s.split(","));
                 for (int i = 0; i < newLine.size(); i++) {
-                    validData.setString(i+1,newLine.get(i));
+                    if (i !=7 &&i!=8) {
+                        validData.setString(i + 1, newLine.get(i));
+                    }else {
+                        Date d= new SimpleDateFormat("MM/dd/yyyy").parse(newLine.get(i));
+                        java.sql.Date d1 = new java.sql.Date(d.getTime());
+                        validData.setDate(i+1,d1);
+                    }
                 }
+                validData.executeUpdate();
+
             }
-        }catch(IOException | SQLException e){
+            for (String s: duplicateData ) {
+                newLine=Arrays.asList(s.split(","));
+                for (int i = 0; i < newLine.size(); i++) {
+                    if (i !=7 &&i!=8) {
+                        DuplicateData.setString(i + 1, newLine.get(i));
+                    }else {
+                        Date d= new SimpleDateFormat("MM/dd/yyyy").parse(newLine.get(i));
+                        java.sql.Date d1 = new java.sql.Date(d.getTime());
+                        DuplicateData.setDate(i+1,d1);
+                    }
+                }
+                DuplicateData.executeUpdate();
+            }
+        }catch(IOException | SQLException | ParseException e){
             e.printStackTrace();
         }
     }
